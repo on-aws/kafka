@@ -136,18 +136,38 @@ Resources:
               Value: '2181'
             - Name: ZOOKEEPER_TICK_TIME
               Value: '2000'
-            - Name: !Select [0, !GetAZs '']
+            - Name:
+                Fn::Join:
+                  - '_'
+                  - Fn::Split:
+                    - '-'
+                    - !Select [0, !GetAZs '']
               Value: 1
             - Fn::If:
               - SecondZone
-              - Name: !Select [1, !GetAZs '']
+              - Name:
+                Fn::Join:
+                  - '_'
+                  - Fn::Split:
+                    - '-'
+                    - !Select [1, !GetAZs '']
                 Value: 2
               - !Ref AWS::NoValue
             - Fn::If:
               - ThirdZone
-              - Name: !Select [2, !GetAZs '']
+              - Name:
+                Fn::Join:
+                  - '_'
+                  - Fn::Split:
+                    - '-'
+                    - !Select [2, !GetAZs '']
                 Value: 3
               - !Ref AWS::NoValue
+          EntryPoint:
+            - bash
+            - -c
+            - !Sub >-
+              if [[ ! -f "$ZOO_DATA_DIR/myid" ]]; then cat $ECS_CONTAINER_METADATA_FILE; fi
           LogConfiguration:
             LogDriver: awslogs
             Options:
