@@ -171,9 +171,15 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           Subnets:
-            Fn::Split:
-              - ','
-              - !Ref PrivateSubnets
+            - !Select [ 0, !Ref PrivateSubnets ]
+            - Fn::If:
+              - SecondZone
+              - !Select [ 1, !Ref PrivateSubnets ]
+              - !Ref AWS::NoValue
+            - Fn::If:
+              - ThirdZone
+              - !Select [ 2, !Ref PrivateSubnets ]
+              - !Ref AWS::NoValue
           SecurityGroups:
             - !GetAtt CLUSTER.Outputs.SecurityGroup
       PropagateTags: SERVICE
