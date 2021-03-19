@@ -31,6 +31,9 @@ Parameters:
   Cluster:
     Type: String
 
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+
   CloudMap:
     Type: String
 
@@ -181,7 +184,7 @@ Resources:
               - !Select [ 2, !Ref PrivateSubnets ]
               - !Ref AWS::NoValue
           SecurityGroups:
-            - !GetAtt CLUSTER.Outputs.SecurityGroup
+            - !Ref SecurityGroup
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       TaskDefinition:

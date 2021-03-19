@@ -83,6 +83,7 @@ Resources:
         CloudMap: !Ref CloudMap
         CloudWatchLogsGroup: !Ref CloudWatchLogsGroup
         Cluster: !GetAtt CLUSTER.Outputs.Cluster
+        SecurityGroup: !GetAtt CLUSTER.Outputs.SecurityGroup
 
   ################################################################################
   # Service Discovery
