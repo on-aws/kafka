@@ -28,6 +28,9 @@ Parameters:
     Description: Choose which subnets this ECS cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
 
+  Cluster:
+    Type: String
+
   CloudMap:
     Type: String
 
@@ -137,7 +140,7 @@ Resources:
   ZookeeperService:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: !GetAtt CLUSTER.Outputs.Cluster
+      Cluster: !Ref Cluster
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100

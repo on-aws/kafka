@@ -82,6 +82,7 @@ Resources:
         PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
         CloudMap: !Ref CloudMap
         CloudWatchLogsGroup: !Ref CloudWatchLogsGroup
+        Cluster: !GetAtt CLUSTER.Outputs.Cluster
 
   ################################################################################
   # Service Discovery
