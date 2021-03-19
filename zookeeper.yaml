@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Zookeeper for Kafka
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Tags. The metadata that you apply to the resources.
+        Parameters:
+          - App
+          - Owner
+
+Parameters:
+  App:
+    Type: String
+    Default: kafka
+
+  Owner:
+    Type: String
+
+  AvailabilityZonesCount:
+    Description: Number of availability zones to span.
+    Default: 2
+    Type: Number
+    AllowedValues: [ 1, 2, 3 ]
+
+  PrivateSubnets:
+    Description: Choose which subnets this ECS cluster should be deployed to
+    Type: List<AWS::EC2::Subnet::Id>
+
+  TemplatesBucket:
+    Description: Specify ON-AWS S3 Bucket
+    Type: String
+    Default: on-aws-us-east-1-master
+
+Resources:
+  ZookeeperServiceDiscoveryEntry:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Description: '"zookeeper" service discovery entry in Cloud Map'
+      DnsConfig:
+        DnsRecords:
+          - Type: A
+            TTL: 30
+        RoutingPolicy: MULTIVALUE
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: zookeeper
+      NamespaceId: !Ref CloudMap
+
+  ZookeeperTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Tags:
+        - Key: App
+          Value: !Ref App
+        - Key: Owner
+          Value: !Ref Owner
+
+  ZookeeperTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Volumes:
+        - Name: !Sub ${AWS::StackName}-zookeeper-data
+          DockerVolumeConfiguration:
+            Autoprovision: true
+            Scope: shared
+            Driver: rexray/ebs
+            DriverOpts:
+              volumetype: gp2
+              size: 5
+        - Name: !Sub ${AWS::StackName}-zookeeper-log
+          DockerVolumeConfiguration:
+            Autoprovision: true
+            Scope: shared
+            Driver: rexray/ebs
+            DriverOpts:
+              volumetype: gp2
+              size: 5
+      ContainerDefinitions:
+        - Name: zookeeper
+          Essential: true
+          Image: docker.io/confluentinc/cp-zookeeper:6.1.0@sha256:755269bb86bad3592a790586ed8f8a3288874ba3d0e23b16b7bc6f0b998908c5
+          MountPoints:
+            - ContainerPath: /var/lib/zookeeper/data
+              SourceVolume: !Sub ${AWS::StackName}-zookeeper-data
+              ReadOnly: false
+            - ContainerPath: /var/lib/zookeeper/log
+              SourceVolume: !Sub ${AWS::StackName}-zookeeper-log
+              ReadOnly: false
+          PortMappings:
+            # client
+            - ContainerPort: 2181
+              HostPort: 2181
+              Protocol: tcp
+            # server
+            - ContainerPort: 2888
+              HostPort: 2888
+              Protocol: tcp
+            # leader-ellection
+            - ContainerPort: 3888
+              HostPort: 3888
+              Protocol: tcp
+          Environment:
+            - Name: ZOOKEEPER_CLIENT_PORT
+              Value: '2181'
+            - Name: ZOOKEEPER_TICK_TIME
+              Value: '2000'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: zookeeper
+      Cpu: "256"
+      ExecutionRoleArn: !Ref ZookeeperTaskExecutionRole
+      Family: zookeeper
+      Memory: "512"
+      NetworkMode: awsvpc
+
+  ZookeeperService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !GetAtt CLUSTER.Outputs.Cluster
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: ECS
+      DesiredCount: !Ref AvailabilityZonesCount
+      LaunchType: EC2
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets:
+            Fn::Split:
+              - ','
+              - !GetAtt VPC.Outputs.PrivateSubnets
+          SecurityGroups:
+            - !GetAtt CLUSTER.Outputs.SecurityGroup
+      PropagateTags: SERVICE
+      SchedulingStrategy: REPLICA
+      TaskDefinition:
+        Ref: ZookeeperTaskDefinition
+      ServiceRegistries:
+        - RegistryArn: !GetAtt ZookeeperServiceDiscoveryEntry.Arn
+      Tags:
+        - Key: App
+          Value: !Ref App
+        - Key: Owner
+          Value: !Ref Owner

@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Kafka Cluster
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Tags. The metadata that you apply to the resources.
+        Parameters:
+          - App
+          - Owner
+
+Parameters:
+  App:
+    Type: String
+    Default: kafka
+
+  Owner:
+    Type: String
+
+  AvailabilityZonesCount:
+    Description: Number of availability zones to span.
+    Default: 2
+    Type: Number
+    AllowedValues: [ 1, 2, 3 ]
+
+  TemplatesBucket:
+    Description: Specify ON-AWS S3 Bucket
+    Type: String
+    Default: on-aws-us-east-1-master
+
+Resources:
+  ################################################################################
+  # INFRASTRUCTURE
+  ################################################################################
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplatesBucket}/vpc/template.yaml
+      Parameters:
+        App: !Ref App
+        Owner: !Ref Owner
+        AvailabilityZonesCount: !Ref AvailabilityZonesCount
+
+  CLUSTER:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplatesBucket}/ecscluster/main.yaml
+      Parameters:
+        App: !Ref App
+        Owner: !Ref Owner
+        AvailabilityZonesCount: !Ref AvailabilityZonesCount
+        VPC: !GetAtt VPC.Outputs.VPC
+        PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${App}/${CLUSTER.Outputs.Cluster}/tasks/kafka
+      RetentionInDays: 7
+
+  CloudMap:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Description: Service Map for Kafka
+      Name: !GetAtt CLUSTER.Outputs.Cluster
+      Vpc: !GetAtt VPC.Outputs.VPC
+      Tags:
+        - Key: App
+          Value: !Ref App
+        - Key: Owner
+          Value: !Ref Owner
+
+  Zookeeper:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplatesBucket}/kafka/zookeeper.yaml
+      Parameters:
+        App: !Ref App
+        Owner: !Ref Owner
+        AvailabilityZonesCount: !Ref AvailabilityZonesCount
+        PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
+
+  ################################################################################
+  # Service Discovery
+  ################################################################################
+  # ConnectServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"connect" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: connect
+  #     NamespaceId: !Ref CloudMap
+
+  # BrokerServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"broker" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: broker
+  #     NamespaceId: !Ref CloudMap
+
+  # KsqldatagenServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"ksql-datagen" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: ksql-datagen
+  #     NamespaceId: !Ref CloudMap
+
+  # KsqldbcliServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"ksqldb-cli" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: ksqldb-cli
+  #     NamespaceId: !Ref CloudMap
+
+  # KsqldbserverServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"ksqldb-server" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: ksqldb-server
+  #     NamespaceId: !Ref CloudMap
+
+  # RestproxyServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"rest-proxy" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: rest-proxy
+  #     NamespaceId: !Ref CloudMap
+
+  # SchemaregistryServiceDiscoveryEntry:
+  #   Type: AWS::ServiceDiscovery::Service
+  #   Properties:
+  #     Description: '"schema-registry" service discovery entry in Cloud Map'
+  #     DnsConfig:
+  #       DnsRecords:
+  #         - Type: A
+  #           TTL: 30
+  #       RoutingPolicy: MULTIVALUE
+  #     HealthCheckCustomConfig:
+  #       FailureThreshold: 1
+  #     Name: schema-registry
+  #     NamespaceId: !Ref CloudMap
