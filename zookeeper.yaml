@@ -167,7 +167,7 @@ Resources:
             - bash
             - -c
             - !Sub >-
-              if [[ ! -f "$ZOO_DATA_DIR/myid" ]]; then cat $ECS_CONTAINER_METADATA_FILE; fi
+              if [[ ! -f "/var/lib/zookeeper/data/myid" ]]; then cat $ECS_CONTAINER_METADATA_FILE; fi
           LogConfiguration:
             LogDriver: awslogs
             Options:
