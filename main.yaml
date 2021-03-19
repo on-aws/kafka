@@ -80,6 +80,8 @@ Resources:
         Owner: !Ref Owner
         AvailabilityZonesCount: !Ref AvailabilityZonesCount
         PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
+        CloudMap: !Ref CloudMap
+        CloudWatchLogsGroup: !Ref CloudWatchLogsGroup
 
   ################################################################################
   # Service Discovery

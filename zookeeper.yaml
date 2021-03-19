@@ -28,6 +28,12 @@ Parameters:
     Description: Choose which subnets this ECS cluster should be deployed to
     Type: List<AWS::EC2::Subnet::Id>
 
+  CloudMap:
+    Type: String
+
+  CloudWatchLogsGroup:
+    Type: String
+
   TemplatesBucket:
     Description: Specify ON-AWS S3 Bucket
     Type: String
