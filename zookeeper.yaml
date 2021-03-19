@@ -143,26 +143,21 @@ Resources:
                     - '-'
                     - !Select [0, !GetAZs '']
               Value: 1
-            - Fn::If:
-              - SecondZone
-              - Name:
+            - Name:
                 Fn::Join:
                   - '_'
                   - Fn::Split:
                     - '-'
                     - !Select [1, !GetAZs '']
-                Value: 2
-              - !Ref AWS::NoValue
-            - Fn::If:
-              - ThirdZone
-              - Name:
+              Value: 2
+            - Name:
                 Fn::Join:
                   - '_'
                   - Fn::Split:
                     - '-'
                     - !Select [2, !GetAZs '']
-                Value: 3
-              - !Ref AWS::NoValue
+              Value: 3
+
           EntryPoint:
             - bash
             - -c
