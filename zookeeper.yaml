@@ -178,15 +178,16 @@ Resources:
           EntryPoint:
             - bash
             - -c
-            - >
-              if [[ ! -f "/data/myid" ]]; then cat $ECS_CONTAINER_METADATA_FILE; fi &&
-              /docker-entrypoint.sh
+            - !Sub >
+              cat $ECS_CONTAINER_METADATA_FILE &&
+              if [[ ! -f "/data/myid" ]]; then echo "Hello" fi &&
+              /sbin/tini -g -- /docker-entrypoint.sh
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group: !Ref CloudWatchLogsGroup
               awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: zookeeper
+              #awslogs-stream-prefix: zookeeper
       Cpu: "256"
       ExecutionRoleArn: !Ref ZookeeperTaskExecutionRole
       Family: zookeeper
