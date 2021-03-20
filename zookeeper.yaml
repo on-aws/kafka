@@ -91,6 +91,14 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Volumes:
+        - Name: !Sub ${AWS::StackName}-zookeeper-conf
+          DockerVolumeConfiguration:
+            Autoprovision: true
+            Scope: shared
+            Driver: rexray/ebs
+            DriverOpts:
+              volumetype: gp2
+              size: 10
         - Name: !Sub ${AWS::StackName}-zookeeper-data
           DockerVolumeConfiguration:
             Autoprovision: true
@@ -98,25 +106,39 @@ Resources:
             Driver: rexray/ebs
             DriverOpts:
               volumetype: gp2
-              size: 5
-        - Name: !Sub ${AWS::StackName}-zookeeper-log
+              size: 10
+        - Name: !Sub ${AWS::StackName}-zookeeper-datalog
           DockerVolumeConfiguration:
             Autoprovision: true
             Scope: shared
             Driver: rexray/ebs
             DriverOpts:
               volumetype: gp2
-              size: 5
+              size: 10
+        - Name: !Sub ${AWS::StackName}-zookeeper-logs
+          DockerVolumeConfiguration:
+            Autoprovision: true
+            Scope: shared
+            Driver: rexray/ebs
+            DriverOpts:
+              volumetype: gp2
+              size: 10
       ContainerDefinitions:
         - Name: zookeeper
           Essential: true
-          Image: docker.io/confluentinc/cp-zookeeper:6.1.0@sha256:755269bb86bad3592a790586ed8f8a3288874ba3d0e23b16b7bc6f0b998908c5
+          Image: zookeeper:3.6.2
           MountPoints:
-            - ContainerPath: /var/lib/zookeeper/data
+            - ContainerPath: /conf
+              SourceVolume: !Sub ${AWS::StackName}-zookeeper-conf
+              ReadOnly: false
+            - ContainerPath: /data
               SourceVolume: !Sub ${AWS::StackName}-zookeeper-data
               ReadOnly: false
-            - ContainerPath: /var/lib/zookeeper/log
-              SourceVolume: !Sub ${AWS::StackName}-zookeeper-log
+            - ContainerPath: /datalog
+              SourceVolume: !Sub ${AWS::StackName}-zookeeper-datalog
+              ReadOnly: false
+            - ContainerPath: /logs
+              SourceVolume: !Sub ${AWS::StackName}-zookeeper-logs
               ReadOnly: false
           PortMappings:
             # client
@@ -132,10 +154,6 @@ Resources:
               HostPort: 3888
               Protocol: tcp
           Environment:
-            - Name: ZOOKEEPER_CLIENT_PORT
-              Value: '2181'
-            - Name: ZOOKEEPER_TICK_TIME
-              Value: '2000'
             - Name:
                 Fn::Join:
                   - '_'
@@ -157,6 +175,12 @@ Resources:
                     - '-'
                     - !Select [2, !GetAZs '']
               Value: 3
+          EntryPoint:
+            - bash
+            - -c
+            - >
+              if [[ ! -f "/data/myid" ]]; then cat $ECS_CONTAINER_METADATA_FILE; fi &&
+              /docker-entrypoint.sh
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -174,8 +198,7 @@ Resources:
     Properties:
       Cluster: !Ref Cluster
       DeploymentConfiguration:
-        MaximumPercent: 200
-        MinimumHealthyPercent: 100
+        MinimumHealthyPercent: 66
       DeploymentController:
         Type: ECS
       DesiredCount: !Ref AvailabilityZonesCount
