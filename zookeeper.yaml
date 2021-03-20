@@ -157,12 +157,6 @@ Resources:
                     - '-'
                     - !Select [2, !GetAZs '']
               Value: 3
-
-          EntryPoint:
-            - bash
-            - -c
-            - !Sub >-
-              if [[ ! -f "/var/lib/zookeeper/data/myid" ]]; then cat $ECS_CONTAINER_METADATA_FILE; fi
           LogConfiguration:
             LogDriver: awslogs
             Options:
