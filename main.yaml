@@ -53,6 +53,9 @@ Resources:
         VPC: !GetAtt VPC.Outputs.VPC
         PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
 
+  ################################################################################
+  # COMMON
+  ################################################################################
   CloudWatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -71,6 +74,28 @@ Resources:
         - Key: Owner
           Value: !Ref Owner
 
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Tags:
+        - Key: App
+          Value: !Ref App
+        - Key: Owner
+          Value: !Ref Owner
+
+  ################################################################################
+  # SERVICES
+  ################################################################################
   Zookeeper:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -79,6 +104,8 @@ Resources:
         App: !Ref App
         Owner: !Ref Owner
         AvailabilityZonesCount: !Ref AvailabilityZonesCount
+        TaskExecutionRole: !Ref TaskExecutionRole
+        VPC: !GetAtt VPC.Outputs.VPC
         PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
         CloudMap: !Ref CloudMap
         CloudWatchLogsGroup: !Ref CloudWatchLogsGroup
@@ -100,20 +127,6 @@ Resources:
   #     HealthCheckCustomConfig:
   #       FailureThreshold: 1
   #     Name: connect
-  #     NamespaceId: !Ref CloudMap
-
-  # BrokerServiceDiscoveryEntry:
-  #   Type: AWS::ServiceDiscovery::Service
-  #   Properties:
-  #     Description: '"broker" service discovery entry in Cloud Map'
-  #     DnsConfig:
-  #       DnsRecords:
-  #         - Type: A
-  #           TTL: 30
-  #       RoutingPolicy: MULTIVALUE
-  #     HealthCheckCustomConfig:
-  #       FailureThreshold: 1
-  #     Name: broker
   #     NamespaceId: !Ref CloudMap
 
   # KsqldatagenServiceDiscoveryEntry:
