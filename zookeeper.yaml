@@ -41,7 +41,6 @@ Parameters:
 
   Cluster:
     Type: String
-    Default: test-ecs
 
   CloudMap:
     Type: String
@@ -203,9 +202,9 @@ Resources:
                 if [ ! -f "$ZOO_DATA_DIR/myid" ] && [ $az == ${az1} ]; then echo 1 > "$ZOO_DATA_DIR/myid"; fi &&
                 if [ ! -f "$ZOO_DATA_DIR/myid" ] && [ $az == ${az2} ]; then echo 2 > "$ZOO_DATA_DIR/myid"; fi &&
                 if [ ! -f "$ZOO_DATA_DIR/myid" ] && [ $az == ${az3} ]; then echo 3 > "$ZOO_DATA_DIR/myid"; fi &&
-                if [ $az == ${az1} ]; then export ZOO_SERVERS="server.1=0.0.0.0:2888:3888;2181 server.2=zk2.test-ecs:2888:3888;2181 server.3=zk3.test-ecs:2888:3888;2181"; fi &&
-                if [ $az == ${az2} ]; then export ZOO_SERVERS="server.1=zk1.test-ecs:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zk3.test-ecs:2888:3888;2181"; fi &&
-                if [ $az == ${az3} ]; then export ZOO_SERVERS="server.1=zk1.test-ecs:2888:3888;2181 server.2=zk2.test-ecs:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181"; fi &&
+                if [ $az == ${az1} ]; then export ZOO_SERVERS="server.1=0.0.0.0:2888:3888;2181 server.2=zk2.${Cluster}:2888:3888;2181 server.3=zk3.${Cluster}:2888:3888;2181"; fi &&
+                if [ $az == ${az2} ]; then export ZOO_SERVERS="server.1=zk1.${Cluster}:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zk3.${Cluster}:2888:3888;2181"; fi &&
+                if [ $az == ${az3} ]; then export ZOO_SERVERS="server.1=zk1.${Cluster}:2888:3888;2181 server.2=zk2.${Cluster}:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181"; fi &&
                 /docker-entrypoint.sh zkServer.sh start-foreground
               -
                 az1: !Select [0, !GetAZs '']
