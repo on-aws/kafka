@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Zookeeper for Kafka
+Description: Kafka
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -64,39 +64,39 @@ Resources:
   ServiceDiscoveryEntry1:
     Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description: '"zookeeper" service discovery entry in Cloud Map'
+      Description: '"kafka" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
             TTL: 30
         RoutingPolicy: MULTIVALUE
-      Name: zk1
+      Name: kafka1
       NamespaceId: !Ref CloudMap
 
   ServiceDiscoveryEntry2:
     Type: AWS::ServiceDiscovery::Service
     Condition: SecondZone
     Properties:
-      Description: '"zookeeper" service discovery entry in Cloud Map'
+      Description: '"kafka" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
             TTL: 30
         RoutingPolicy: MULTIVALUE
-      Name: zk2
+      Name: kafka2
       NamespaceId: !Ref CloudMap
 
   ServiceDiscoveryEntry3:
     Type: AWS::ServiceDiscovery::Service
     Condition: ThirdZone
     Properties:
-      Description: '"zookeeper" service discovery entry in Cloud Map'
+      Description: '"kafka" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
             TTL: 30
         RoutingPolicy: MULTIVALUE
-      Name: zk3
+      Name: kafka3
       NamespaceId: !Ref CloudMap
 
   ################################################################################
@@ -105,12 +105,12 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Group for ECS Zookeeper Tasks
+      GroupDescription: Group for ECS Kafka Tasks
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 2181
-          ToPort: 2181
+          FromPort: 9092
+          ToPort: 9092
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: App
@@ -131,82 +131,29 @@ Resources:
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Volumes:
-        - Name: !Sub ${AWS::StackName}-zookeeper-conf
-          DockerVolumeConfiguration:
-            Autoprovision: true
-            Scope: shared
-            Driver: rexray/ebs
-            DriverOpts:
-              volumetype: gp2
-              size: 10
-        - Name: !Sub ${AWS::StackName}-zookeeper-data
-          DockerVolumeConfiguration:
-            Autoprovision: true
-            Scope: shared
-            Driver: rexray/ebs
-            DriverOpts:
-              volumetype: gp2
-              size: 10
-        - Name: !Sub ${AWS::StackName}-zookeeper-datalog
-          DockerVolumeConfiguration:
-            Autoprovision: true
-            Scope: shared
-            Driver: rexray/ebs
-            DriverOpts:
-              volumetype: gp2
-              size: 10
-        - Name: !Sub ${AWS::StackName}-zookeeper-logs
-          DockerVolumeConfiguration:
-            Autoprovision: true
-            Scope: shared
-            Driver: rexray/ebs
-            DriverOpts:
-              volumetype: gp2
-              size: 10
       ContainerDefinitions:
-        - Name: zookeeper
+        - Name: kafka
           Essential: true
-          Image: zookeeper:3.6.2
-          MountPoints:
-            - ContainerPath: /conf
-              SourceVolume: !Sub ${AWS::StackName}-zookeeper-conf
-              ReadOnly: false
-            - ContainerPath: /data
-              SourceVolume: !Sub ${AWS::StackName}-zookeeper-data
-              ReadOnly: false
-            - ContainerPath: /datalog
-              SourceVolume: !Sub ${AWS::StackName}-zookeeper-datalog
-              ReadOnly: false
-            - ContainerPath: /logs
-              SourceVolume: !Sub ${AWS::StackName}-zookeeper-logs
-              ReadOnly: false
+          Image: confluentinc/cp-kafka:6.1.0
           PortMappings:
-            # client
-            - ContainerPort: 2181
-              HostPort: 2181
+            - ContainerPort: 9092
+              HostPort: 9092
               Protocol: tcp
-            # server
-            - ContainerPort: 2888
-              HostPort: 2888
-              Protocol: tcp
-            # leader-ellection
-            - ContainerPort: 3888
-              HostPort: 3888
-              Protocol: tcp
+          Environment:
+            - Name: KAFKA_ZOOKEEPER_CONNECT
+              Value: !Sub zk1.${Cluster},zk2.${Cluster},zk3.${Cluster}
+            - Name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              Value: PLAINTEXT:PLAINTEXT
           EntryPoint:
             - bash
             - -c
             - Fn::Sub:
               - |
                 az=`cat $ECS_CONTAINER_METADATA_FILE | grep -oP '(?<="AvailabilityZone": ")[^"]*'`
-                if [ ! -f "$ZOO_DATA_DIR/myid" ] && [ $az == ${az1} ]; then echo 1 > "$ZOO_DATA_DIR/myid"; fi
-                if [ ! -f "$ZOO_DATA_DIR/myid" ] && [ $az == ${az2} ]; then echo 2 > "$ZOO_DATA_DIR/myid"; fi
-                if [ ! -f "$ZOO_DATA_DIR/myid" ] && [ $az == ${az3} ]; then echo 3 > "$ZOO_DATA_DIR/myid"; fi
-                if [ $az == ${az1} ]; then export ZOO_SERVERS="server.1=0.0.0.0:2888:3888;2181 server.2=zk2.${Cluster}:2888:3888;2181 server.3=zk3.${Cluster}:2888:3888;2181"; fi
-                if [ $az == ${az2} ]; then export ZOO_SERVERS="server.1=zk1.${Cluster}:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zk3.${Cluster}:2888:3888;2181"; fi
-                if [ $az == ${az3} ]; then export ZOO_SERVERS="server.1=zk1.${Cluster}:2888:3888;2181 server.2=zk2.${Cluster}:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181"; fi
-                /docker-entrypoint.sh zkServer.sh start-foreground
+                if [ $az == ${az1} ]; then export KAFKA_BROKER_ID="1" KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://kafka1.${Cluster}:9092"; fi
+                if [ $az == ${az2} ]; then export KAFKA_BROKER_ID="2" KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://kafka2.${Cluster}:9092"; fi
+                if [ $az == ${az3} ]; then export KAFKA_BROKER_ID="3" KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://kafka3.${Cluster}:9092"; fi
+                /etc/confluent/docker/run
               -
                 az1: !Select [0, !GetAZs '']
                 az2: !Select [1, !GetAZs '']
@@ -219,7 +166,7 @@ Resources:
               awslogs-stream-prefix: on-aws
       Cpu: "256"
       ExecutionRoleArn: !Ref TaskExecutionRole
-      Family: zookeeper
+      Family: kafka
       Memory: "512"
       NetworkMode: awsvpc
 
@@ -260,7 +207,6 @@ Resources:
 
   Service2:
     Type: AWS::ECS::Service
-    Condition: SecondZone
     Properties:
       Cluster: !Ref Cluster
       DeploymentConfiguration:
@@ -296,7 +242,6 @@ Resources:
 
   Service3:
     Type: AWS::ECS::Service
-    Condition: ThirdZone
     Properties:
       Cluster: !Ref Cluster
       DeploymentConfiguration:
