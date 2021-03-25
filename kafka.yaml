@@ -64,7 +64,7 @@ Resources:
   ServiceDiscoveryEntry1:
     Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description: '"kafka" service discovery entry in Cloud Map'
+      Description: '"kafka1" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
@@ -77,7 +77,7 @@ Resources:
     Type: AWS::ServiceDiscovery::Service
     Condition: SecondZone
     Properties:
-      Description: '"kafka" service discovery entry in Cloud Map'
+      Description: '"kafka2" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
@@ -90,7 +90,7 @@ Resources:
     Type: AWS::ServiceDiscovery::Service
     Condition: ThirdZone
     Properties:
-      Description: '"kafka" service discovery entry in Cloud Map'
+      Description: '"kafka3" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
