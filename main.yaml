@@ -126,3 +126,19 @@ Resources:
         CloudMap: !Ref CloudMap
         CloudWatchLogsGroup: !Ref CloudWatchLogsGroup
         Cluster: !GetAtt CLUSTER.Outputs.Cluster
+
+  SchemaRegistry:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Kafka
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplatesBucket}/kafka/schema-registry.yaml
+      Parameters:
+        App: !Ref App
+        Owner: !Ref Owner
+        AvailabilityZonesCount: !Ref AvailabilityZonesCount
+        TaskExecutionRole: !Ref TaskExecutionRole
+        VPC: !GetAtt VPC.Outputs.VPC
+        PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
+        CloudMap: !Ref CloudMap
+        CloudWatchLogsGroup: !Ref CloudWatchLogsGroup
+        Cluster: !GetAtt CLUSTER.Outputs.Cluster
