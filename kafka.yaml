@@ -55,10 +55,10 @@ Parameters:
 Conditions:
   SecondZone:
     Fn::Or:
-      - Fn::Equals: [!Ref AvailabilityZonesCount, 2]
-      - Fn::Equals: [!Ref AvailabilityZonesCount, 3]
+      - Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 2]
+      - Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 3]
   ThirdZone:
-    Fn::Equals: [!Ref AvailabilityZonesCount, 3]
+    Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 3]
 
 Resources:
   ServiceDiscoveryEntry1:
@@ -71,7 +71,8 @@ Resources:
             TTL: 30
         RoutingPolicy: MULTIVALUE
       Name: kafka1
-      NamespaceId: !Ref CloudMap
+      NamespaceId:
+        Fn::Ref: CloudMap
 
   ServiceDiscoveryEntry2:
     Type: AWS::ServiceDiscovery::Service
@@ -84,7 +85,8 @@ Resources:
             TTL: 30
         RoutingPolicy: MULTIVALUE
       Name: kafka2
-      NamespaceId: !Ref CloudMap
+      NamespaceId:
+        Fn::Ref: CloudMap
 
   ServiceDiscoveryEntry3:
     Type: AWS::ServiceDiscovery::Service
@@ -97,7 +99,8 @@ Resources:
             TTL: 30
         RoutingPolicy: MULTIVALUE
       Name: kafka3
-      NamespaceId: !Ref CloudMap
+      NamespaceId:
+        Fn::Ref: CloudMap
 
   ################################################################################
   # Task Security
@@ -106,7 +109,8 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Group for ECS Kafka Tasks
-      VpcId: !Ref VPC
+      VpcId:
+        Fn::Ref: VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9092

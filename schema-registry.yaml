@@ -55,10 +55,10 @@ Parameters:
 Conditions:
   SecondZone:
     Fn::Or:
-      - Fn::Equals: [!Ref AvailabilityZonesCount, 2]
-      - Fn::Equals: [!Ref AvailabilityZonesCount, 3]
+      - Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 2]
+      - Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 3]
   ThirdZone:
-    Fn::Equals: [!Ref AvailabilityZonesCount, 3]
+    Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 3]
 
 Resources:
   ServiceDiscoveryEntry:
@@ -71,7 +71,8 @@ Resources:
             TTL: 30
         RoutingPolicy: MULTIVALUE
       Name: schema-registry
-      NamespaceId: !Ref CloudMap
+      NamespaceId:
+        Fn::Ref: CloudMap
 
   ################################################################################
   # Task Security
@@ -80,7 +81,8 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Group for ECS Kafka Tasks
-      VpcId: !Ref VPC
+      VpcId:
+        Fn::Ref: VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8081
@@ -88,9 +90,11 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: App
-          Value: !Ref App
+          Value:
+            Fn::Ref: App
         - Key: Owner
-          Value: !Ref Owner
+          Value:
+            Fn::Ref: Owner
 
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -117,7 +121,7 @@ Resources:
             - Name: SCHEMA_REGISTRY_HOST_NAME
               Value: schema-registry.${Cluster}
             - Name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
-              Value: !Sub kafka1.${Cluster},kafka2.${Cluster},kafka3.${Cluster}
+              Value: !Sub PLAINTEXT://kafka1.${Cluster}:9092,PLAINTEXT://kafka2.${Cluster}:9092,PLAINTEXT://kafka3.${Cluster}:9092
             - Name: SCHEMA_REGISTRY_LISTENERS
               Value: http://0.0.0.0:8081
           LogConfiguration:
