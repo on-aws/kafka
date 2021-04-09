@@ -270,7 +270,7 @@ Resources:
               -
                 subnet: !Select [ 2, !Ref PrivateSubnets ]
       TaskDefinition:
-        Ref: TaskDefinition
+        Fn::Ref: TaskDefinition
       ServiceRegistries:
         - RegistryArn: !GetAtt ServiceDiscoveryEntry3.Arn
       Tags:
