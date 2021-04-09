@@ -118,19 +118,23 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: App
-          Value: !Ref App
+          Value:
+            Fn::Ref: App
         - Key: Owner
-          Value: !Ref Owner
+          Value:
+            Fn::Ref: Owner
 
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: all traffic inside security group
-      GroupId: !Ref SecurityGroup
+      GroupId:
+        Fn::Ref: SecurityGroup
       IpProtocol: -1
       FromPort: -1
       ToPort: -1
-      SourceSecurityGroupId: !Ref SecurityGroup
+      SourceSecurityGroupId:
+        Fn::Ref: SecurityGroup
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -165,11 +169,14 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group: !Ref CloudWatchLogsGroup
-              awslogs-region: !Ref AWS::Region
+              awslogs-group:
+                Fn::Ref: CloudWatchLogsGroup
+              awslogs-region:
+                Fn::Ref: AWS::Region
               awslogs-stream-prefix: on-aws
       Cpu: "256"
-      ExecutionRoleArn: !Ref TaskExecutionRole
+      ExecutionRoleArn:
+        Fn::Ref: TaskExecutionRole
       Family: kafka
       Memory: "512"
       NetworkMode: awsvpc
@@ -177,7 +184,8 @@ Resources:
   Service1:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: !Ref Cluster
+      Cluster:
+        Fn::Ref: Cluster
       DeploymentConfiguration:
         MinimumHealthyPercent: 0
       DeploymentController:
@@ -187,9 +195,9 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           Subnets:
-            - !Select [ 0, !Ref PrivateSubnets ]
+            - Fn::Select: [ 0, Fn::Ref: PrivateSubnets ]
           SecurityGroups:
-            - !Ref SecurityGroup
+            - Fn::Ref: SecurityGroup
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       PlacementConstraints:
@@ -198,21 +206,25 @@ Resources:
             Fn::Sub:
               - attribute:ecs.subnet-id == ${subnet}
               -
-                subnet: !Select [ 0, !Ref PrivateSubnets ]
+                subnet:
+                  Fn::Select: [ 0, Fn::Ref: PrivateSubnets ]
       TaskDefinition:
-        Ref: TaskDefinition
+        Fn::Ref: TaskDefinition
       ServiceRegistries:
         - RegistryArn: !GetAtt ServiceDiscoveryEntry1.Arn
       Tags:
         - Key: App
-          Value: !Ref App
+          Value:
+            Fn::Ref: App
         - Key: Owner
-          Value: !Ref Owner
+          Value:
+            Fn::Ref: Owner
 
   Service2:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: !Ref Cluster
+      Cluster:
+        Fn::Ref: Cluster
       DeploymentConfiguration:
         MinimumHealthyPercent: 0
       DeploymentController:
@@ -222,9 +234,9 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           Subnets:
-            - !Select [ 1, !Ref PrivateSubnets ]
+            - Fn::Select: [ 1, Fn::Ref: PrivateSubnets ]
           SecurityGroups:
-            - !Ref SecurityGroup
+            - Fn::Ref: SecurityGroup
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       PlacementConstraints:
@@ -233,21 +245,25 @@ Resources:
             Fn::Sub:
               - attribute:ecs.subnet-id == ${subnet}
               -
-                subnet: !Select [ 1, !Ref PrivateSubnets ]
+                subnet:
+                  Fn::Select: [ 1, Fn::Ref: PrivateSubnets ]
       TaskDefinition:
-        Ref: TaskDefinition
+        Fn::Ref: TaskDefinition
       ServiceRegistries:
         - RegistryArn: !GetAtt ServiceDiscoveryEntry2.Arn
       Tags:
         - Key: App
-          Value: !Ref App
+          Value:
+            Fn::Ref: App
         - Key: Owner
-          Value: !Ref Owner
+          Value:
+            Fn::Ref: Owner
 
   Service3:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: !Ref Cluster
+      Cluster:
+        Fn::Ref: Cluster
       DeploymentConfiguration:
         MinimumHealthyPercent: 0
       DeploymentController:
@@ -257,9 +273,9 @@ Resources:
       NetworkConfiguration:
         AwsvpcConfiguration:
           Subnets:
-            - !Select [ 2, !Ref PrivateSubnets ]
+            - Fn::Select: [ 2, Fn::Ref: PrivateSubnets ]
           SecurityGroups:
-            - !Ref SecurityGroup
+            - Fn::Ref: SecurityGroup
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       PlacementConstraints:
@@ -268,13 +284,16 @@ Resources:
             Fn::Sub:
               - attribute:ecs.subnet-id == ${subnet}
               -
-                subnet: !Select [ 2, !Ref PrivateSubnets ]
+                subnet:
+                  Fn::Select: [ 2, Fn::Ref: PrivateSubnets ]
       TaskDefinition:
         Fn::Ref: TaskDefinition
       ServiceRegistries:
         - RegistryArn: !GetAtt ServiceDiscoveryEntry3.Arn
       Tags:
         - Key: App
-          Value: !Ref App
+          Value:
+            Fn::Ref: App
         - Key: Owner
-          Value: !Ref Owner
+          Value:
+            Fn::Ref: Owner
