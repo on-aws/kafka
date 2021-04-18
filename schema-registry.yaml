@@ -53,12 +53,10 @@ Parameters:
     Default: on-aws-us-east-1-master
 
 Conditions:
-  SecondZone:
-    Fn::Or:
-      - Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 2]
-      - Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 3]
-  ThirdZone:
-    Fn::Equals: [Fn::Ref: AvailabilityZonesCount, 3]
+  SecondZone: !Or
+    - !Equals [!Ref AvailabilityZonesCount, 2]
+    - !Equals [!Ref AvailabilityZonesCount, 3]
+  ThirdZone: !Equals [!Ref AvailabilityZonesCount, 3]
 
 Resources:
   ServiceDiscoveryEntry:
@@ -71,8 +69,7 @@ Resources:
             TTL: 30
         RoutingPolicy: MULTIVALUE
       Name: schema-registry
-      NamespaceId:
-        Fn::Ref: CloudMap
+      NamespaceId: !Ref CloudMap
 
   ################################################################################
   # Task Security
@@ -81,8 +78,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Group for ECS Kafka Tasks
-      VpcId:
-        Fn::Ref: VPC
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8081
@@ -90,11 +86,9 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: App
-          Value:
-            Fn::Ref: App
+          Value: !Ref App
         - Key: Owner
-          Value:
-            Fn::Ref: Owner
+          Value: !Ref Owner
 
   SecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -156,8 +150,7 @@ Resources:
       PlacementStrategies:
         - Type: spread
           Field: attribute:ecs.availability-zone
-      TaskDefinition:
-        Ref: TaskDefinition
+      TaskDefinition: !Ref TaskDefinition
       ServiceRegistries:
         - RegistryArn: !GetAtt ServiceDiscoveryEntry.Arn
       Tags:

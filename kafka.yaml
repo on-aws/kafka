@@ -56,8 +56,7 @@ Conditions:
   SecondZone: !Or
     - !Equals [!Ref AvailabilityZonesCount, 2]
     - !Equals [!Ref AvailabilityZonesCount, 3]
-  ThirdZone:
-    !Equals [!Ref AvailabilityZonesCount, 3]
+  ThirdZone: !Equals [!Ref AvailabilityZonesCount, 3]
 
 Resources:
   ServiceDiscoveryEntry1:
