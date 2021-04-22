@@ -50,6 +50,7 @@ Resources:
         App: !Ref App
         Owner: !Ref Owner
         AvailabilityZonesCount: !Ref AvailabilityZonesCount
+        TasksPerAvailabilityZone: 3
         VPC: !GetAtt VPC.Outputs.VPC
         PrivateSubnets: !GetAtt VPC.Outputs.PrivateSubnets
 
@@ -99,7 +100,7 @@ Resources:
   Zookeeper:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${TemplatesBucket}/kafka/zookeeper.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplatesBucket}/zookeeper/template.yaml
       Parameters:
         App: !Ref App
         Owner: !Ref Owner
