@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Kafka
+Description: KSQL
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -21,7 +21,7 @@ Parameters:
     Description: Number of availability zones to span.
     Default: 3
     Type: Number
-    AllowedValues: [ 1, 3 ]
+    AllowedValues: [ 1, 2, 3 ]
 
   TaskExecutionRole:
     Description: >
@@ -62,13 +62,13 @@ Resources:
   ServiceDiscoveryEntry:
     Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description: '"schema-registry" service discovery entry in Cloud Map'
+      Description: '"ksql" service discovery entry in Cloud Map'
       DnsConfig:
         DnsRecords:
           - Type: A
             TTL: 30
         RoutingPolicy: MULTIVALUE
-      Name: schema-registry
+      Name: ksql
       NamespaceId: !Ref CloudMap
 
   ################################################################################
@@ -77,12 +77,12 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Group for ECS Kafka Tasks
+      GroupDescription: Group for ECS KSQL Tasks
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 8081
-          ToPort: 8081
+          FromPort: 8088
+          ToPort: 8088
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: App
@@ -104,20 +104,20 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
-        - Name: schema-registry
+        - Name: ksql
           Essential: true
-          Image: confluentinc/cp-schema-registry:latest
+          Image: confluentinc/cp-ksqldb-server:latest
           PortMappings:
-            - ContainerPort: 8081
-              HostPort: 8081
+            - ContainerPort: 8088
+              HostPort: 8088
               Protocol: tcp
           Environment:
-            - Name: SCHEMA_REGISTRY_HOST_NAME
-              Value: !Sub schema-registry.${Cluster}
-            - Name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
+            - Name: KSQL_KSQL_SCHEMA_REGISTRY_URL
+              Value: !Sub http://schema-registry.${Cluster}:8081
+            - Name: KSQL_BOOTSTRAP_SERVERS
               Value: !Sub PLAINTEXT://kafka1.${Cluster}:9092,PLAINTEXT://kafka2.${Cluster}:9092,PLAINTEXT://kafka3.${Cluster}:9092
-            - Name: SCHEMA_REGISTRY_LISTENERS
-              Value: http://0.0.0.0:8081
+            - Name: KSQL_LISTENERS
+              Value: http://0.0.0.0:8088
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -126,7 +126,7 @@ Resources:
               awslogs-stream-prefix: on-aws
       Cpu: "256"
       ExecutionRoleArn: !Ref TaskExecutionRole
-      Family: schema-registry
+      Family: ksql
       Memory: "512"
       NetworkMode: awsvpc
 
